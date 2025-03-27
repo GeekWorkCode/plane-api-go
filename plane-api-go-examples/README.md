@@ -22,12 +22,9 @@
 
 ## 安装
 
-1. 确保 `plane-api-go` 库位于正确位置：
-```bash
-# 示例项目应该位于 plane-api-go 库的同级目录下
-# 目录结构如下：
-# - plane-api-go/         # API 库
-# - plane-api-go-examples/ # 示例项目
+1. 
+```
+github.com/GeekWorkCode/plane-api-go v0.2.0
 ```
 
 2. 安装依赖：
