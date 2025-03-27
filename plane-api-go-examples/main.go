@@ -8,6 +8,7 @@ import (
 
 	"github.com/GeekWorkCode/plane-api-go"
 	"github.com/GeekWorkCode/plane-api-go/api"
+	"github.com/GeekWorkCode/plane-api-go/models"
 	"github.com/joho/godotenv"
 )
 
@@ -50,13 +51,13 @@ func main() {
 	}
 
 	// 测试项目相关接口
-	testProjects(client, workspaceSlug)
+	// testProjects(client, workspaceSlug)
 
 	// 测试问题相关接口
-	testIssues(client, workspaceSlug, projectID)
+	// testIssues(client, workspaceSlug, projectID)
 
 	// 测试周期相关接口
-	testCycles(client, workspaceSlug, projectID)
+	// testCycles(client, workspaceSlug, projectID)
 
 	// 测试评论相关接口
 	testComments(client, workspaceSlug, projectID, issueID)
@@ -165,6 +166,39 @@ func testIssues(client *plane.Plane, workspaceSlug, projectID string) {
 	}
 	fmt.Printf("问题详情: %+v\n", issue)
 
+	// 通过序列ID获取问题
+	// 需要先获取项目详情以获取项目标识符
+	fmt.Println("\n=== 通过序列ID获取问题 ===")
+	project, err := client.Projects.Get(workspaceSlug, projectID)
+	if err != nil {
+		log.Printf("获取项目详情失败: %v", err)
+		return
+	}
+
+	// 构造序列ID (格式通常为: PROJECT_IDENTIFIER-SEQUENCE_NUMBER)
+	// 注意: 我们需要从Issue响应中自行提取序列号
+	// 这里假设问题的序列号可以从问题名称或其他信息中获取，或者使用现有问题的序列号
+	// 在真实环境中，序列号通常是从问题ID或问题详情中获取
+	sequenceID := ""
+	// 尝试从已有问题中获取一个有效的序列ID
+	if len(issues) > 0 {
+		// 这里假设可以通过某种方式获取到序列ID
+		// 在实际环境中可能需要通过API获取或从其他地方提取
+		sequenceID = fmt.Sprintf("%s-%d", project.Identifier, 1) // 使用项目标识符和假设的序列号1
+	} else {
+		sequenceID = fmt.Sprintf("%s-%d", project.Identifier, 1) // 默认使用1作为序列号
+	}
+
+	issueBySequence, err := client.Issues.GetBySequenceID(workspaceSlug, sequenceID)
+	if err != nil {
+		log.Printf("通过序列ID获取问题失败: %v", err)
+	} else {
+		fmt.Printf("通过序列ID获取的问题: %+v\n", issueBySequence)
+
+		// 使用此问题ID进行后续测试
+		newIssue.ID = issueBySequence.ID
+	}
+
 	// 更新问题
 	updatedIssue, err := client.Issues.Update(workspaceSlug, projectID, newIssue.ID, &api.IssueUpdateRequest{
 		Name:        fmt.Sprintf("更新后的问题 %s", time.Now().Format("20060102150405")),
@@ -178,6 +212,10 @@ func testIssues(client *plane.Plane, workspaceSlug, projectID string) {
 	}
 	fmt.Printf("更新后的问题: %+v\n", updatedIssue)
 
+	// 通过序列ID更新问题
+	fmt.Println("\n=== 通过序列ID更新问题 ===")
+	testUpdateIssueBySequenceID(client, workspaceSlug, sequenceID)
+
 	// 删除问题
 	// err = client.Issues.Delete(workspaceSlug, projectID, newIssue.ID)
 	// if err != nil {
@@ -185,6 +223,44 @@ func testIssues(client *plane.Plane, workspaceSlug, projectID string) {
 	// 	return
 	// }
 	// fmt.Println("问题删除成功")
+}
+
+// 测试通过序列ID更新问题
+func testUpdateIssueBySequenceID(client *plane.Plane, workspaceSlug, sequenceID string) {
+	// 更新问题
+	// TODO: 待实现 UpdateBySequenceID 方法的完整集成
+	// 当前API库尚未完全导出此方法
+	/*
+		updatedIssue, err := client.Issues.UpdateBySequenceID(workspaceSlug, sequenceID, &api.IssueUpdateRequest{
+			Name:        fmt.Sprintf("通过序列ID更新的问题 %s", time.Now().Format("20060102150405")),
+			Description: "通过序列ID更新的问题描述",
+			Priority:    "urgent",
+		})
+		if err != nil {
+			log.Printf("通过序列ID更新问题失败: %v", err)
+			return
+		}
+		fmt.Printf("通过序列ID更新后的问题: %+v\n", updatedIssue)
+	*/
+
+	// 临时替代方案：使用GetBySequenceID获取问题后，通过标准Update方法更新
+	issueBySequence, err := client.Issues.GetBySequenceID(workspaceSlug, sequenceID)
+	if err != nil {
+		log.Printf("通过序列ID获取问题失败: %v", err)
+		return
+	}
+
+	// 使用标准更新方法
+	updatedIssue, err := client.Issues.Update(workspaceSlug, issueBySequence.Project, issueBySequence.ID, &api.IssueUpdateRequest{
+		Name:        fmt.Sprintf("通过序列ID获取并更新的问题 %s", time.Now().Format("20060102150405")),
+		Description: "通过序列ID获取并更新的问题描述",
+		Priority:    "urgent",
+	})
+	if err != nil {
+		log.Printf("更新问题失败: %v", err)
+		return
+	}
+	fmt.Printf("通过序列ID获取并更新后的问题: %+v\n", updatedIssue)
 }
 
 // 测试周期相关接口
@@ -244,49 +320,149 @@ func testCycles(client *plane.Plane, workspaceSlug, projectID string) {
 func testComments(client *plane.Plane, workspaceSlug, projectID, issueID string) {
 	fmt.Println("\n=== 测试评论相关接口 ===")
 
+	// 从成员列表中选择第一个成员的显示名称用于测试
+	displayName := "zs"
+	fmt.Printf("\n> 使用成员显示名称: %s 进行评论测试\n", displayName)
+
+	var createdComment *models.Comment
+
 	// 列出所有评论
 	comments, err := client.Comments.List(workspaceSlug, projectID, issueID)
 	if err != nil {
 		log.Printf("获取评论列表失败: %v", err)
 		return
 	}
-	fmt.Printf("评论列表: %+v\n", comments)
 
-	// 创建新评论
-	newComment, err := client.Comments.Create(workspaceSlug, projectID, issueID, &api.CommentCreateRequest{
-		CommentHTML: fmt.Sprintf("<p>这是一条通过 API 创建的测试评论 %s</p>", time.Now().Format("20060102150405")),
-	})
+	// fmt.Printf("当前评论数量: %d\n", len(comments))
+
+	// // 打印评论的成员信息
+	if len(comments) > 0 {
+		fmt.Println("\n现有评论的作者信息:")
+		for i, comment := range comments {
+			if comment.Member != nil {
+				fmt.Printf("评论 %d: 由 %s (%s) 创建\n", i+1, comment.Member.DisplayName, comment.Member.ID)
+			} else {
+				fmt.Printf("评论 %d: 创建者ID %s (无成员信息)\n", i+1, comment.CreatedBy)
+			}
+		}
+	}
+
+	// 如果没有从评论中获取到成员ID，尝试从成员列表中获取
+	// if memberID == "" {
+	// 	// 获取成员列表
+	// 	members, err := client.Members.List(workspaceSlug, projectID)
+	// 	if err == nil && len(members) > 0 {
+	// 		memberID = members[0].Member.ID
+	// 		fmt.Printf("从成员列表获取到成员ID: %s\n", memberID)
+	// 	}
+	// }
+
+	// 使用 DisplayName 创建评论
+	fmt.Println("\n=== 使用 DisplayName 创建评论 ===")
+	createReq := &api.CommentRequest{
+		CommentHTML: fmt.Sprintf("<p>这是一条通过 DisplayName (%s) 创建的测试评论 %s</p>",
+			displayName, time.Now().Format("20060102150405")),
+		DisplayName: displayName,
+	}
+
+	createdComment, err = client.Comments.Create(workspaceSlug, projectID, issueID, createReq)
 	if err != nil {
-		log.Printf("创建评论失败: %v", err)
+		log.Printf("使用 DisplayName 创建评论失败: %v", err)
 		return
 	}
-	fmt.Printf("创建的评论: %+v\n", newComment)
+
+	fmt.Println("评论创建成功！")
+
+	// 显示评论的成员信息
+	if createdComment.Member != nil {
+		fmt.Printf("评论由 %s (%s) 创建\n", createdComment.Member.DisplayName, createdComment.Member.ID)
+	} else {
+		fmt.Printf("评论创建者ID: %s (无成员信息)\n", createdComment.CreatedBy)
+	}
 
 	// 获取评论详情
-	comment, err := client.Comments.Get(workspaceSlug, projectID, issueID, newComment.ID)
+	comment, err := client.Comments.Get(workspaceSlug, projectID, issueID, createdComment.ID)
 	if err != nil {
 		log.Printf("获取评论详情失败: %v", err)
 		return
 	}
-	fmt.Printf("评论详情: %+v\n", comment)
+	fmt.Println("\n=== 获取评论详情 ===")
+	fmt.Printf("评论ID: %s\n", comment.ID)
+	fmt.Printf("评论内容: %s\n", comment.CommentHTML)
+	fmt.Printf("创建时间: %s\n", comment.CreatedAt.Format("2006-01-02 15:04:05"))
 
-	// 更新评论
-	updatedComment, err := client.Comments.Update(workspaceSlug, projectID, issueID, newComment.ID, &api.CommentUpdateRequest{
-		CommentHTML: fmt.Sprintf("<p>这是一条更新后的评论 %s</p>", time.Now().Format("20060102150405")),
-	})
-	if err != nil {
-		log.Printf("更新评论失败: %v", err)
-		return
-	}
-	fmt.Printf("更新后的评论: %+v\n", updatedComment)
+	// 使用 DisplayName 更新评论
+	// fmt.Println("\n=== 使用 DisplayName 更新评论 ===")
+	// updateReq := &api.CommentRequest{
+	// 	CommentHTML: fmt.Sprintf("<p>这是一条通过 DisplayName (%s) 更新的测试评论 %s</p>",
+	// 		displayName, time.Now().Format("20060102150405")),
+	// 	DisplayName: displayName,
+	// }
 
-	// 删除评论
-	err = client.Comments.Delete(workspaceSlug, projectID, issueID, newComment.ID)
-	if err != nil {
-		log.Printf("删除评论失败: %v", err)
-		return
-	}
-	fmt.Println("评论删除成功")
+	// updatedComment, err := client.Comments.Update(workspaceSlug, projectID, issueID, createdComment.ID, updateReq)
+	// if err != nil {
+	// 	log.Printf("使用 DisplayName 更新评论失败: %v", err)
+	// } else {
+	// 	fmt.Println("评论更新成功！")
+
+	// 	// 显示评论的成员信息
+	// 	if updatedComment.Member != nil {
+	// 		fmt.Printf("评论由 %s (%s) 更新\n", updatedComment.Member.DisplayName, updatedComment.Member.ID)
+	// 	} else {
+	// 		fmt.Printf("评论更新者ID: %s (无成员信息)\n", updatedComment.UpdatedBy)
+	// 	}
+	// }
+
+	// 使用 CreatedBy 直接创建评论
+	// if memberID != "" {
+	// 	fmt.Println("\n=== 使用 CreatedBy (MemberID) 创建评论 ===")
+	// 	directCreateReq := &api.CommentRequest{
+	// 		CommentHTML: fmt.Sprintf("<p>这是一条通过 CreatedBy (MemberID: %s) 创建的测试评论 %s</p>",
+	// 			memberID, time.Now().Format("20060102150405")),
+	// 		CreatedBy: memberID,
+	// 	}
+
+	// 	directComment, err := client.Comments.Create(workspaceSlug, projectID, issueID, directCreateReq)
+	// 	if err != nil {
+	// 		log.Printf("使用 CreatedBy 创建评论失败: %v", err)
+	// 	} else {
+	// 		fmt.Println("使用 CreatedBy 创建评论成功！")
+
+	// 		// 显示评论的成员信息
+	// 		if directComment.Member != nil {
+	// 			fmt.Printf("评论由 %s (%s) 创建\n", directComment.Member.DisplayName, directComment.Member.ID)
+	// 		} else {
+	// 			fmt.Printf("评论创建者ID: %s (无成员信息)\n", directComment.CreatedBy)
+	// 		}
+
+	// 		// 删除通过 CreatedBy 创建的评论
+	// 		fmt.Println("\n=== 删除通过 CreatedBy 创建的评论 ===")
+	// 		err = client.Comments.Delete(workspaceSlug, projectID, issueID, directComment.ID)
+	// 		if err != nil {
+	// 			log.Printf("删除通过 CreatedBy 创建的评论失败: %v", err)
+	// 		} else {
+	// 			fmt.Println("通过 CreatedBy 创建的评论删除成功")
+	// 		}
+	// 	}
+	// }
+
+	// 删除创建的评论
+	// fmt.Println("\n=== 删除通过 DisplayName 创建的评论 ===")
+	// err = client.Comments.Delete(workspaceSlug, projectID, issueID, createdComment.ID)
+	// if err != nil {
+	// 	log.Printf("删除评论失败: %v", err)
+	// } else {
+	// 	fmt.Println("评论删除成功")
+	// }
+
+	// 再次列出所有评论，确认删除成功
+	// comments, err = client.Comments.List(workspaceSlug, projectID, issueID)
+	// if err != nil {
+	// 	log.Printf("获取评论列表失败: %v", err)
+	// 	return
+	// }
+
+	// fmt.Printf("\n删除后的评论数量: %d\n", len(comments))
 }
 
 // 测试工作日志相关接口

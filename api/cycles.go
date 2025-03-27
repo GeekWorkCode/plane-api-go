@@ -22,12 +22,18 @@ func NewCyclesService(client *client.Client) *CyclesService {
 
 // CycleCreateRequest represents the request body for creating a cycle
 type CycleCreateRequest struct {
-	Name string `json:"name"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	StartDate   string `json:"start_date,omitempty"`
+	EndDate     string `json:"end_date,omitempty"`
 }
 
 // CycleUpdateRequest represents the request body for updating a cycle
 type CycleUpdateRequest struct {
-	Name string `json:"name,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	StartDate   string `json:"start_date,omitempty"`
+	EndDate     string `json:"end_date,omitempty"`
 }
 
 // List returns all cycles in a project

@@ -223,6 +223,8 @@ type Comment struct {
 	Project     string    `json:"project"`
 	Workspace   string    `json:"workspace"`
 	Issue       string    `json:"issue"`
+	// Member information for tracking who made the comment
+	Member *MemberUser `json:"member,omitempty"`
 }
 
 // State represents a state in the project (e.g., Todo, In Progress, Done)
@@ -309,4 +311,59 @@ type UploadCredentials struct {
 	AssetID    string       `json:"asset_id"`
 	Attachment Attachment   `json:"attachment"`
 	AssetURL   string       `json:"asset_url"`
+}
+
+// MembersResponse 成员列表的分页响应
+type MembersResponse struct {
+	GroupedBy       interface{} `json:"grouped_by"`
+	SubGroupedBy    interface{} `json:"sub_grouped_by"`
+	TotalCount      int         `json:"total_count"`
+	NextCursor      string      `json:"next_cursor"`
+	PrevCursor      string      `json:"prev_cursor"`
+	NextPageResults bool        `json:"next_page_results"`
+	PrevPageResults bool        `json:"prev_page_results"`
+	Count           int         `json:"count"`
+	TotalPages      int         `json:"total_pages"`
+	TotalResults    int         `json:"total_results"`
+	ExtraStats      interface{} `json:"extra_stats"`
+	Results         []Member    `json:"results"`
+}
+
+// MemberUser represents a member user information
+type MemberUser struct {
+	ID              string      `json:"id"`
+	FirstName       string      `json:"first_name"`
+	LastName        string      `json:"last_name"`
+	Avatar          string      `json:"avatar"`
+	AvatarURL       interface{} `json:"avatar_url"`
+	IsBot           bool        `json:"is_bot"`
+	DisplayName     string      `json:"display_name"`
+	Email           string      `json:"email"`
+	LastLoginMedium string      `json:"last_login_medium"`
+}
+
+// WorkspaceInfo represents workspace information within a member
+type WorkspaceInfo struct {
+	Name    string      `json:"name"`
+	Slug    string      `json:"slug"`
+	ID      string      `json:"id"`
+	LogoURL interface{} `json:"logo_url"`
+}
+
+// Member represents a project member
+type Member struct {
+	ID           string                 `json:"id"`
+	Member       MemberUser             `json:"member"`
+	Workspace    WorkspaceInfo          `json:"workspace"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	DeletedAt    *time.Time             `json:"deleted_at"`
+	Role         int                    `json:"role"`
+	CompanyRole  interface{}            `json:"company_role"`
+	ViewProps    map[string]interface{} `json:"view_props"`
+	DefaultProps map[string]interface{} `json:"default_props"`
+	IssueProps   map[string]interface{} `json:"issue_props"`
+	IsActive     bool                   `json:"is_active"`
+	CreatedBy    string                 `json:"created_by"`
+	UpdatedBy    string                 `json:"updated_by"`
 }

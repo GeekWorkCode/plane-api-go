@@ -118,3 +118,16 @@ func (s *IssuesService) Delete(workspaceSlug string, projectID string, issueID s
 	_, err = s.client.Do(req, nil)
 	return err
 }
+
+// UpdateBySequenceID updates an issue by its sequence ID
+func (s *IssuesService) UpdateBySequenceID(workspaceSlug string, sequenceID string, updateRequest *IssueUpdateRequest) (*models.Issue, error) {
+	path := fmt.Sprintf("/workspaces/%s/issues/%s/", workspaceSlug, sequenceID)
+	req, err := s.client.NewRequest(http.MethodPatch, path, updateRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	issue := new(models.Issue)
+	_, err = s.client.Do(req, issue)
+	return issue, err
+}

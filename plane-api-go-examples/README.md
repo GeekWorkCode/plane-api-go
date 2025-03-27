@@ -10,6 +10,9 @@
 - 中文注释说明
 - 支持调试模式
 - 所有API都确保URL格式正确，避免PATCH请求错误
+- 支持通过序列ID（SequenceID）操作问题
+- 支持灵活的评论创建方式，可通过成员显示名称（DisplayName）或成员ID（CreatedBy）创建评论
+- 自动处理评论作者显示不一致的问题，确保评论显示正确的作者
 
 ## 环境要求
 
@@ -63,7 +66,9 @@ go run main.go
    - 列出所有问题
    - 创建新问题
    - 获取问题详情
+   - 通过序列ID获取问题详情
    - 更新问题信息
+   - 通过序列ID更新问题
    - 删除问题
 
 3. 周期管理
@@ -75,9 +80,13 @@ go run main.go
 
 4. 评论管理
    - 列出问题评论
-   - 创建新评论
+   - 创建新评论（支持两种方式）：
+     - 通过成员显示名称（DisplayName）
+     - 通过成员ID（CreatedBy）
    - 获取评论详情
-   - 更新评论内容
+   - 更新评论内容（支持两种方式）：
+     - 通过成员显示名称（DisplayName）
+     - 通过成员ID（Actor）
    - 删除评论
 
 5. 工作日志管理
@@ -93,6 +102,54 @@ go run main.go
    - 获取上传凭证
    - 完成附件上传
 
+## 评论功能说明
+
+评论功能是与 Plane 系统交互的重要部分，我们对评论系统进行了增强，以提供更灵活的使用方式。
+
+### 创建评论的两种方式
+
+1. 通过成员显示名称（DisplayName）创建评论:
+   ```go
+   commentReq := &api.CommentRequest{
+       CommentHTML: "<p>这是一条通过显示名称创建的评论</p>",
+       DisplayName: "用户显示名称",
+   }
+   
+   comment, err := client.Comments.Create(workspaceSlug, projectID, issueID, commentReq)
+   ```
+
+   使用这种方式时，库会自动查找匹配的成员ID，无需预先知道ID值。
+
+2. 通过成员ID（CreatedBy）直接创建评论:
+   ```go
+   commentReq := &api.CommentRequest{
+       CommentHTML: "<p>这是一条通过成员ID创建的评论</p>",
+       CreatedBy: "成员ID",
+   }
+   
+   comment, err := client.Comments.Create(workspaceSlug, projectID, issueID, commentReq)
+   ```
+
+### 评论作者显示处理
+
+Plane API在处理评论创建时有一个特殊行为：有时在创建评论后，API返回的评论对象可能显示的作者不是预期的用户，这会导致UI中评论显示为系统管理员创建而非实际用户。
+
+我们的库中实现了自动修正机制，在创建评论后检测并处理这种情况：
+
+1. 当创建评论时，库会保存原始的创建者ID
+2. 检查API返回的评论对象中显示的作者是否与提供的创建者匹配
+3. 如果发现不匹配，库会自动执行一次更新操作，确保评论显示正确的作者
+4. 这个过程对用户完全透明，无需额外代码
+
+示例代码中的`testComments`函数展示了这两种评论创建方式，并会显示评论作者的详细信息进行验证。
+
+### 优势
+
+- 更加灵活的接口，同时支持显示名称和成员ID
+- 自动处理成员ID查找，简化开发
+- 自动处理作者显示问题，确保UI中显示正确的评论作者
+- 统一的API接口使代码更加清晰
+
 ## 注意事项
 
 1. 请确保在使用前正确配置 `.env` 文件中的所有必要参数
@@ -100,6 +157,9 @@ go run main.go
 3. 示例程序会创建和删除测试数据，请谨慎使用
 4. 如果启用调试模式，将会输出详细的 API 请求和响应信息
 5. 对于PATCH和DELETE等请求，确保URL末尾有斜杠("/")，否则Django服务器可能无法处理请求
+6. 序列ID（SequenceID）通常是"PROJECT_IDENTIFIER-NUMBER"格式，例如"PRJ-123"
+7. 使用序列ID操作问题时，需要确保序列ID是正确的，否则API将返回404错误
+8. 评论创建时如果遇到作者显示不正确的情况，库会自动尝试修正，无需手动处理
 
 ## 许可证
 

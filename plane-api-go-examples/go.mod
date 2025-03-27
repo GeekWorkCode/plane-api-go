@@ -7,4 +7,4 @@ require (
 	github.com/joho/godotenv v1.5.1
 )
 
-// replace github.com/GeekWorkCode/plane-api-go => ../plane-api-go
+replace github.com/GeekWorkCode/plane-api-go => ../../plane-api-go

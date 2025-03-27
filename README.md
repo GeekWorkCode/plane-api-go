@@ -105,6 +105,43 @@ updatedIssue, err := client.Issues.Update("your-workspace-slug", "project-id", "
 err := client.Issues.Delete("your-workspace-slug", "project-id", "issue-id")
 ```
 
+### Comments
+
+```go
+// List all comments for an issue
+comments, err := client.Comments.List("your-workspace-slug", "project-id", "issue-id")
+
+// Get a comment by ID
+comment, err := client.Comments.Get("your-workspace-slug", "project-id", "issue-id", "comment-id")
+
+// Create a comment using DisplayName (library will look up the member ID)
+comment, err := client.Comments.Create("your-workspace-slug", "project-id", "issue-id", &api.CommentRequest{
+    CommentHTML: "<p>This is a comment created via DisplayName</p>",
+    DisplayName: "John Doe",
+})
+
+// Create a comment using MemberID directly
+comment, err := client.Comments.Create("your-workspace-slug", "project-id", "issue-id", &api.CommentRequest{
+    CommentHTML: "<p>This is a comment created via MemberID</p>",
+    CreatedBy: "member-id",
+})
+
+// Update a comment using DisplayName
+updatedComment, err := client.Comments.Update("your-workspace-slug", "project-id", "issue-id", "comment-id", &api.CommentRequest{
+    CommentHTML: "<p>This is an updated comment via DisplayName</p>",
+    DisplayName: "John Doe",
+})
+
+// Update a comment using MemberID (through Actor field)
+updatedComment, err := client.Comments.Update("your-workspace-slug", "project-id", "issue-id", "comment-id", &api.CommentRequest{
+    CommentHTML: "<p>This is an updated comment via Actor</p>",
+    Actor: "member-id",
+})
+
+// Delete a comment
+err := client.Comments.Delete("your-workspace-slug", "project-id", "issue-id", "comment-id")
+```
+
 ### Cycles
 
 ```go
@@ -181,6 +218,16 @@ attachment, err := client.Attachments.UploadFileToIssue(
 )
 ```
 
+### Members
+
+```go
+// List all members in a project
+members, err := client.Members.List("your-workspace-slug", "project-id")
+
+// Get a member by ID
+member, err := client.Members.Get("your-workspace-slug", "project-id", "member-id")
+```
+
 ## Running the Examples
 
 1. Navigate to the examples directory
@@ -211,6 +258,17 @@ If you're using a self-hosted Plane instance, you can set a custom base URL:
 ```go
 client.SetBaseURL("https://your-plane-instance.com/api/v1")
 ```
+
+## Comment Author Handling
+
+The Plane API has a specific behavior regarding comment creation and author display. The library automatically handles this behavior to ensure the comment author is displayed correctly:
+
+1. When creating a comment, you can use either `DisplayName` or `CreatedBy` (Member ID).
+2. If you use `DisplayName`, the library will automatically look up the corresponding Member ID.
+3. The library includes logic to handle potential discrepancies between the provided creator ID and the displayed creator in the API response.
+4. If needed, the library will automatically perform a follow-up update operation to ensure the correct author is displayed.
+
+This approach ensures a consistent experience when creating comments through the API, matching what users would see in the Plane UI.
 
 ## License
 
