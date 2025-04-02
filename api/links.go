@@ -40,9 +40,13 @@ func (s *LinksService) List(workspaceSlug string, projectID string, issueID stri
 		return nil, err
 	}
 
-	var links []models.Link
-	_, err = s.client.Do(req, &links)
-	return links, err
+	response := new(models.LinksResponse)
+	_, err = s.client.Do(req, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Results, nil
 }
 
 // Get returns a link by its ID

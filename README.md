@@ -95,6 +95,24 @@ newIssue, err := client.Issues.Create("your-workspace-slug", "project-id", &api.
     Description: "A new issue created via the API",
 })
 
+// Create an issue using state name and assignee name
+newIssue, err := client.Issues.Create("your-workspace-slug", "project-id", &api.IssueCreateRequest{
+    Name:          "Issue with State Name and Assignee Name",
+    Description:   "An issue created using state name and assignee name",
+    StateName:     "Backlog",       // Will be converted to state ID automatically
+    Priority:      "medium",
+    AssigneeNames: []string{"John Doe"}, // Will be converted to member ID automatically
+})
+
+// Create an issue with multiple assignees
+newIssue, err := client.Issues.Create("your-workspace-slug", "project-id", &api.IssueCreateRequest{
+    Name:          "Issue with Multiple Assignees",
+    Description:   "An issue created with multiple assignees",
+    StateName:     "Backlog",
+    Priority:      "high",
+    AssigneeNames: []string{"John Doe", "Jane Smith"}, // Will be converted to member IDs automatically
+})
+
 // Update an issue
 updatedIssue, err := client.Issues.Update("your-workspace-slug", "project-id", "issue-id", &api.IssueUpdateRequest{
     Name:        "Updated Issue Name",
@@ -103,6 +121,40 @@ updatedIssue, err := client.Issues.Update("your-workspace-slug", "project-id", "
 
 // Delete an issue
 err := client.Issues.Delete("your-workspace-slug", "project-id", "issue-id")
+```
+
+### States
+
+```go
+// List all states in a project
+states, err := client.States.List("your-workspace-slug", "project-id")
+
+// Get a state by ID
+state, err := client.States.Get("your-workspace-slug", "project-id", "state-id")
+
+// Create a new state
+newState, err := client.States.Create("your-workspace-slug", "project-id", &api.StateCreateRequest{
+    Name:        "New State",
+    Description: "A new state created via the API",
+    Color:       "#4CAF50",  // Green color
+})
+
+// Update a state
+updatedState, err := client.States.Update("your-workspace-slug", "project-id", "state-id", &api.StateUpdateRequest{
+    Name:        "Updated State Name",
+    Description: "Updated state description",
+    Color:       "#FFC107",  // Yellow color
+})
+
+// Delete a state
+err := client.States.Delete("your-workspace-slug", "project-id", "state-id")
+
+// Create an issue with a specific state
+newIssue, err := client.Issues.Create("your-workspace-slug", "project-id", &api.IssueCreateRequest{
+    Name:        "New Issue with Custom State",
+    Description: "An issue using a custom state",
+    State:       newState.ID,
+})
 ```
 
 ### Comments
@@ -269,6 +321,17 @@ The Plane API has a specific behavior regarding comment creation and author disp
 4. If needed, the library will automatically perform a follow-up update operation to ensure the correct author is displayed.
 
 This approach ensures a consistent experience when creating comments through the API, matching what users would see in the Plane UI.
+
+## States and Issue Workflow
+
+The States API allows you to manage the workflow states for issues in your projects:
+
+1. States represent different stages in your issue workflow (e.g., "Todo", "In Progress", "Done").
+2. Each state has a name, description, and color for visual identification in the UI.
+3. States can be created, updated, and deleted through the API.
+4. When creating or updating issues, you can specify which state to use by providing the state ID.
+
+Note that states that are currently being used by issues may not be deletable until those issues are moved to different states.
 
 ## License
 

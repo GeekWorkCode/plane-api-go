@@ -117,6 +117,54 @@ type CommentsResponse struct {
 	Results         []Comment   `json:"results"`
 }
 
+// StatesResponse 状态列表的分页响应
+type StatesResponse struct {
+	GroupedBy       interface{} `json:"grouped_by"`
+	SubGroupedBy    interface{} `json:"sub_grouped_by"`
+	TotalCount      int         `json:"total_count"`
+	NextCursor      string      `json:"next_cursor"`
+	PrevCursor      string      `json:"prev_cursor"`
+	NextPageResults bool        `json:"next_page_results"`
+	PrevPageResults bool        `json:"prev_page_results"`
+	Count           int         `json:"count"`
+	TotalPages      int         `json:"total_pages"`
+	TotalResults    int         `json:"total_results"`
+	ExtraStats      interface{} `json:"extra_stats"`
+	Results         []State     `json:"results"`
+}
+
+// LabelsResponse 标签列表的分页响应
+type LabelsResponse struct {
+	GroupedBy       interface{} `json:"grouped_by"`
+	SubGroupedBy    interface{} `json:"sub_grouped_by"`
+	TotalCount      int         `json:"total_count"`
+	NextCursor      string      `json:"next_cursor"`
+	PrevCursor      string      `json:"prev_cursor"`
+	NextPageResults bool        `json:"next_page_results"`
+	PrevPageResults bool        `json:"prev_page_results"`
+	Count           int         `json:"count"`
+	TotalPages      int         `json:"total_pages"`
+	TotalResults    int         `json:"total_results"`
+	ExtraStats      interface{} `json:"extra_stats"`
+	Results         []Label     `json:"results"`
+}
+
+// LinksResponse 链接列表的分页响应
+type LinksResponse struct {
+	GroupedBy       interface{} `json:"grouped_by"`
+	SubGroupedBy    interface{} `json:"sub_grouped_by"`
+	TotalCount      int         `json:"total_count"`
+	NextCursor      string      `json:"next_cursor"`
+	PrevCursor      string      `json:"prev_cursor"`
+	NextPageResults bool        `json:"next_page_results"`
+	PrevPageResults bool        `json:"prev_page_results"`
+	Count           int         `json:"count"`
+	TotalPages      int         `json:"total_pages"`
+	TotalResults    int         `json:"total_results"`
+	ExtraStats      interface{} `json:"extra_stats"`
+	Results         []Link      `json:"results"`
+}
+
 type Pagination struct {
 	Count        int  `json:"count"`
 	TotalPages   int  `json:"total_pages"`
@@ -161,6 +209,7 @@ type Issue struct {
 	State       string    `json:"state,omitempty"`
 	Priority    string    `json:"priority,omitempty"`
 	AssigneeID  string    `json:"assignee_id,omitempty"`
+	Assignees   []string  `json:"assignees,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	CreatedBy   string    `json:"created_by"`

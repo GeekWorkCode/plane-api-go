@@ -42,9 +42,13 @@ func (s *StatesService) List(workspaceSlug string, projectID string) ([]models.S
 		return nil, err
 	}
 
-	var states []models.State
-	_, err = s.client.Do(req, &states)
-	return states, err
+	response := new(models.StatesResponse)
+	_, err = s.client.Do(req, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Results, nil
 }
 
 // Get returns a state by its ID

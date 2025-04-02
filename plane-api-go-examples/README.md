@@ -11,8 +11,11 @@
 - 支持调试模式
 - 所有API都确保URL格式正确，避免PATCH请求错误
 - 支持通过序列ID（SequenceID）操作问题
+- 支持通过分配人名称（AssigneeName）而非ID创建和更新问题
+- 支持多分配人（Multiple Assignees）功能
 - 支持灵活的评论创建方式，可通过成员显示名称（DisplayName）或成员ID（CreatedBy）创建评论
 - 自动处理评论作者显示不一致的问题，确保评论显示正确的作者
+- 支持状态（State）管理，可创建、更新和删除问题状态
 
 ## 环境要求
 
@@ -22,9 +25,12 @@
 
 ## 安装
 
-1. 
-```
-github.com/GeekWorkCode/plane-api-go v0.2.0
+1. 确保 `plane-api-go` 库位于正确位置：
+```bash
+# 示例项目应该位于 plane-api-go 库的同级目录下
+# 目录结构如下：
+# - plane-api-go/         # API 库
+# - plane-api-go-examples/ # 示例项目
 ```
 
 2. 安装依赖：
@@ -68,14 +74,22 @@ go run main.go
    - 通过序列ID更新问题
    - 删除问题
 
-3. 周期管理
+3. 状态管理
+   - 列出项目中的所有状态
+   - 创建自定义状态
+   - 获取状态详情
+   - 更新状态（名称、描述、颜色）
+   - 删除状态
+   - 验证状态在问题中的使用
+
+4. 周期管理
    - 列出所有周期
    - 创建新周期
    - 获取周期详情
    - 更新周期信息
    - 删除周期
 
-4. 评论管理
+5. 评论管理
    - 列出问题评论
    - 创建新评论（支持两种方式）：
      - 通过成员显示名称（DisplayName）
@@ -86,18 +100,62 @@ go run main.go
      - 通过成员ID（Actor）
    - 删除评论
 
-5. 工作日志管理
+6. 工作日志管理
    - 记录问题工时
    - 列出工作日志
    - 更新工作日志
    - 获取项目总工时
    - 删除工作日志
 
-6. 附件管理
+7. 附件管理
    - 列出所有附件
    - 上传新附件
    - 获取上传凭证
    - 完成附件上传
+
+## 问题管理功能
+
+### 通过状态名称和分配人名称创建问题
+
+Plane API 支持通过状态的名称和分配人的名称来创建问题，无需预先知道它们的 ID：
+
+```go
+// 使用状态名称和分配人名称创建问题
+createReq := &api.IssueCreateRequest{
+    Name:          "通过状态名称和分配人名称创建的问题",
+    Description:   "这是通过API使用状态名称和分配人名称创建的问题",
+    StateName:     "Backlog",    // 使用状态名称，而不是ID
+    Priority:      "medium",
+    AssigneeNames: []string{"win8zhang"},  // 使用分配人名称，而不是ID
+}
+
+newIssue, err := client.Issues.Create(workspaceSlug, projectID, createReq)
+```
+
+在这个示例中，API 客户端将自动：
+1. 查找名为 "Backlog" 的状态并获取其 ID
+2. 查找显示名称为 "win8zhang" 的成员并获取其 ID
+3. 使用这些 ID 创建问题
+
+### 创建带有多个分配人的问题
+
+Plane 支持为一个问题分配多个处理人。您可以通过提供一个名称数组来实现：
+
+```go
+// 使用多个分配人名称创建问题
+memberNames := []string{"win8zhang", "zs"}
+multiAssigneeReq := &api.IssueCreateRequest{
+    Name:          "带有多个分配人的问题",
+    Description:   "这是通过API使用多个分配人名称创建的问题",
+    StateName:     "Backlog",
+    Priority:      "medium",
+    AssigneeNames: memberNames, // 使用多个分配人名称
+}
+
+multiAssigneeIssue, err := client.Issues.Create(workspaceSlug, projectID, multiAssigneeReq)
+```
+
+同样，API 客户端会自动查找这些名称对应的成员 ID，并将它们分配给问题。
 
 ## 评论功能说明
 
@@ -140,6 +198,46 @@ Plane API在处理评论创建时有一个特殊行为：有时在创建评论�
 
 示例代码中的`testComments`函数展示了这两种评论创建方式，并会显示评论作者的详细信息进行验证。
 
+## 状态管理功能
+
+Plane 中的状态用于跟踪问题的进展情况（例如：待处理、进行中、已完成等）。示例代码展示了如何管理这些状态：
+
+1. 创建自定义状态：
+   ```go
+   createReq := &api.StateCreateRequest{
+       Name:        "测试状态",
+       Description: "通过 API 创建的测试状态",
+       Color:       "#4CAF50", // 绿色
+   }
+   
+   newState, err := client.States.Create(workspaceSlug, projectID, createReq)
+   ```
+
+2. 更新状态属性：
+   ```go
+   updateReq := &api.StateUpdateRequest{
+       Name:        "更新后的状态",
+       Description: "通过 API 更新的测试状态",
+       Color:       "#FFC107", // 黄色
+   }
+   
+   updatedState, err := client.States.Update(workspaceSlug, projectID, stateID, updateReq)
+   ```
+
+3. 使用自定义状态创建问题：
+   ```go
+   issueReq := &api.IssueCreateRequest{
+       Name:        "使用新状态的测试问题",
+       Description: "这是一个使用新创建状态的测试问题",
+       State:       newState.ID,
+       Priority:    "medium",
+   }
+   
+   newIssue, err := client.Issues.Create(workspaceSlug, projectID, issueReq)
+   ```
+
+示例代码中的`testStates`函数提供了完整的状态管理流程演示。
+
 ### 优势
 
 - 更加灵活的接口，同时支持显示名称和成员ID
@@ -157,6 +255,10 @@ Plane API在处理评论创建时有一个特殊行为：有时在创建评论�
 6. 序列ID（SequenceID）通常是"PROJECT_IDENTIFIER-NUMBER"格式，例如"PRJ-123"
 7. 使用序列ID操作问题时，需要确保序列ID是正确的，否则API将返回404错误
 8. 评论创建时如果遇到作者显示不正确的情况，库会自动尝试修正，无需手动处理
+9. 如果某个状态正在被问题使用，可能无法删除，API会返回相应的错误信息
+10. 使用分配人名称（AssigneeName）时，确保提供的名称在系统中存在并且拼写正确
+11. 问题的分配人信息在API响应中以`assignees`数组形式返回，而不是单个`assignee_id`字段
+12. 当需要获取分配人信息时，请使用`issue.Assignees`数组而不是`issue.AssigneeID`字段
 
 ## 许可证
 

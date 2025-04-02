@@ -44,9 +44,13 @@ func (s *LabelsService) List(workspaceSlug string, projectID string) ([]models.L
 		return nil, err
 	}
 
-	var labels []models.Label
-	_, err = s.client.Do(req, &labels)
-	return labels, err
+	response := new(models.LabelsResponse)
+	_, err = s.client.Do(req, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Results, nil
 }
 
 // Get returns a label by its ID
